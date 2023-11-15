@@ -1,29 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.rawgit.com/donmccurdy/aframe-extras/v6.0.0/dist/aframe-extras.min.js"></script>
-    <script src="https://cdn.rawgit.com/donmccurdy/aframe-handtracking-component/v2.1.0/dist/aframe-handtracking-component.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handtrack.js AR App</title>
+    <script src="https://cdn.jsdelivr.net/npm/handtrackjs@1.9.0/dist/handtrackjs.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.7.0"></script>
 </head>
 <body>
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <!-- Add your camera and other scene elements here -->
-
-        <!-- Hand mesh -->
-        <a-entity handtracking="hand: left; gestures: pinch; pinchEvent: myPinchEvent;"></a-entity>
-
-        <!-- UI to display finger count -->
-        <a-text position="0 1.5 -3" value="Fingers: 0"></a-text>
-    </a-scene>
-
     <script>
-        window.onload = function () {
-            // Listen for hand events
-            document.addEventListener('myPinchEvent', function (event) {
-                const fingerCount = event.detail.fingers.length;
-                document.querySelector('a-text').setAttribute('value', `Fingers: ${fingerCount}`);
-            });
-        };
+        document.addEventListener('DOMContentLoaded', (event) => {
+    // Load the Handtrack.js model
+    const modelParams = {
+        flipHorizontal: false,   // flip e.g. for video
+        maxNumBoxes: 1,          // maximum number of boxes to detect
+        iouThreshold: 0.1,       // ioU threshold for bounding box
+        scoreThreshold: 0.6,     // confidence threshold for predictions
+    };
+
+    handTrack.load(modelParams).then(model => {
+        // Start tracking the hand
+        handTrack.startVideo(document.getElementById('inputVideo')).then(status => {
+            if (status) {
+                // Once the video starts, run the detection loop
+                runDetection(model);
+            } else {
+                console.error('Error: Could not start video.');
+            }
+        });
+    });
+
+    // Function to run hand detection in a loop
+    function runDetection(model) {
+        model.detect(document.getElementById('inputVideo')).then(predictions => {
+            if (predictions.length > 0) {
+                // Get the first hand detected (assuming only one hand is in the frame)
+                const hand = predictions[0].bbox;
+
+                // Update the position of your virtual object
+                updateVirtualObjectPosition(hand);
+
+                // Continue the detection loop
+                requestAnimationFrame(() => runDetection(model));
+            } else {
+                // No hand detected, continue the detection loop
+                requestAnimationFrame(() => runDetection(model));
+            }
+        });
+    }
+
+    // Function to update the position of your virtual object
+    function updateVirtualObjectPosition(hand) {
+        // Your virtual object logic here
+        // For simplicity, let's just log the hand position
+        console.log('Hand Position:', hand);
+    }
+});
+
     </script>
 </body>
 </html>
